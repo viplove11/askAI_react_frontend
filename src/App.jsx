@@ -2,124 +2,161 @@ import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { chat as chatQuery } from "./apiService/chatQuery";
+import "./App.css";
+
+// Unique ID generator
+let messageIdCounter = 0;
+const generateId = () => ++messageIdCounter;
 
 const INITIAL_MESSAGES = [
   {
     id: 1,
     role: "assistant",
-    text: "Welcome! This is Ask you Data. Ask any question about your database, and I'll help you with answers, SQL, and data insights.",
+    text: "**नमस्ते !** मैं आपका **' सर्वेक्षण सहायक एआई सहायक '** हूँ ।\n\nआप अपने डेटा के बारे में कोई भी सवाल पूछ सकते हैं — हिंदी या अंग्रेज़ी में। मैं आपको उत्तर, महत्वपूर्ण जानकारी (इंसाइट्स) और रिपोर्ट देने में मदद करूँगा ।",
     time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     markdown: true,
   },
 ];
 
+messageIdCounter = 1; // Start from 2 for new messages
+
 const SUGGESTIONS = [
-  "Show me pending payments summary",
-  "List all properties with overdue taxes",
-  "What is the total tax collected this month?",
-  "Show payment history for Property ID 7",
+  "BJP party mein kitne members hain?",
+  "Sabhi members ki list dikhao",
+  "Ward 4 ke members kaun hain?",
+  "Total members ka report chahiye",
 ];
 
 function TypingDots() {
   return (
-    <div className="flex items-center gap-1 py-1 px-1">
+    <div className="typing-dots">
       {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className="w-2 h-2 rounded-full bg-slate-400 animate-bounce"
-          style={{ animationDelay: `${i * 0.15}s`, animationDuration: "0.8s" }}
-        />
+        <span key={i} style={{ animationDelay: `${i * 0.18}s` }} />
       ))}
     </div>
   );
 }
 
-function Message({ msg }) {
+function IntentBadge({ intent }) {
+  if (!intent) return null;
+  const map = {
+    count:  { label: "Count",  color: "#f97316", bg: "#fff7ed" },
+    lookup: { label: "Lookup", color: "#ea580c", bg: "#ffedd5" },
+    list:   { label: "List",   color: "#c2410c", bg: "#ffedd5" },
+    report: { label: "Report", color: "#9a3412", bg: "#fed7aa" },
+  };
+  const meta = map[intent];
+  if (!meta) return null;
+  return (
+    <span className="intent-badge" style={{ color: meta.color, background: meta.bg, borderColor: meta.color + "33" }}>
+      {meta.label}
+    </span>
+  );
+}
+
+function Message({ msg, isStreaming }) {
   const isUser = msg.role === "user";
   return (
-    <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"} items-end`}
-      style={{ animation: "fadeUp 0.25s ease forwards" }}>
-      {!isUser && (
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center flex-shrink-0 shadow-sm">
-          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-          </svg>
+    <div className={`msg-row ${isUser ? "msg-user" : "msg-assistant"}`}>
+      {/* {!isUser && (
+        <div className="avatar">
+          <span className="avatar-label">AI</span>
         </div>
-      )}
-      <div className={`flex flex-col gap-1 max-w-[72%] ${isUser ? "items-end" : "items-start"}`}>
-        <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-line ${
-          isUser
-            ? "bg-indigo-500 text-white rounded-br-sm shadow-sm"
-            : "bg-white text-slate-700 border border-slate-100 rounded-bl-sm shadow-sm"
-        }`}>
+      )} */}
+
+      <div className={`bubble-wrap ${isUser ? "bubble-wrap-user" : ""}`}>
+        {/* {!isUser && msg.intent && !isStreaming && (
+          <div className="bubble-meta">
+            <IntentBadge intent={msg.intent} />
+          </div>
+        )} */}
+        <div className={`bubble ${isUser ? "bubble-user" : "bubble-ai"}`}>
           {msg.markdown ? (
-            <div className="chat-markdown">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+            <div className="md">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text || ""}</ReactMarkdown>
             </div>
           ) : (
-            msg.text
+            <span>{msg.text}</span>
+          )}
+          {isStreaming && <span className="cursor-blink" />}
+        </div>
+
+        <div className={`msg-footer ${isUser ? "msg-footer-right" : ""}`}>
+          <span className="msg-time">{msg.time}</span>
+          {!isUser && msg.reportUrl && !isStreaming && (
+            <a href={msg.reportUrl} target="_blank" rel="noopener noreferrer" className="dl-btn">
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              Download Report
+            </a>
           )}
         </div>
-        <span className="text-xs text-slate-400 px-1">{msg.time}</span>
       </div>
     </div>
   );
 }
 
 export default function App() {
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [streamedText, setStreamedText] = useState("");
+  const [messages, setMessages]   = useState(INITIAL_MESSAGES);
+  const [input, setInput]         = useState("");
+  const [isTyping, setIsTyping]   = useState(false);
   const [streaming, setStreaming] = useState(false);
-  const messagesEndRef = useRef(null);
+  const bottomRef   = useRef(null);
   const textareaRef = useRef(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping, streamedText]);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
 
   const now = () =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  // Instant display for markdown answer (no streaming)
-  const streamMarkdown = (fullText) => {
-    setStreaming(false);
-    setStreamedText(fullText);
-    setMessages((prev) => [
-      ...prev.slice(0, -1),
-      {
-        ...prev[prev.length - 1],
-        text: fullText,
-        markdown: true,
-      },
-    ]);
+  const getStreamDelay = (text, targetMs = 6500, minDelay = 12, maxDelay = 55) => {
+    const len = Math.max(text?.length || 0, 1);
+    const calculated = Math.round(targetMs / len);
+    return Math.max(minDelay, Math.min(maxDelay, calculated));
+  };
+
+  const streamText = (fullText, placeholderId, charDelay) => {
+    const safeText = fullText || "";
+    return new Promise((resolve) => {
+      let currentIndex = 0;
+      const interval = setInterval(() => {
+        if (currentIndex <= safeText.length) {
+          const displayText = safeText.slice(0, currentIndex);
+          setMessages((prev) =>
+            prev.map((m) => (m.id === placeholderId ? { ...m, text: displayText } : m))
+          );
+          currentIndex++;
+        } else {
+          clearInterval(interval);
+          resolve();
+        }
+      }, charDelay);
+    });
   };
 
   const send = async (text) => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || isTyping || streaming) return;
+
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
+    // Add user message
     setMessages((prev) => [
       ...prev,
-      { id: Date.now(), role: "user", text: trimmed, time: now() },
+      { id: generateId(), role: "user", text: trimmed, time: now(), markdown: false },
     ]);
     setIsTyping(true);
 
-    // Add a placeholder assistant message for streaming
+    // Placeholder assistant bubble
+    const placeholderId = generateId();
     setMessages((prev) => [
       ...prev,
-      {
-        id: Date.now() + 1,
-        role: "assistant",
-        text: "",
-        time: now(),
-        markdown: true,
-      },
+      { id: placeholderId, role: "assistant", text: "", time: now(), markdown: true },
     ]);
-    setStreamedText("");
     setStreaming(true);
 
     try {
@@ -127,214 +164,88 @@ export default function App() {
       const answer = result?.answer || "Sorry, I couldn't get an answer.";
       const intent = result?.intent || null;
       const reportUrl = result?.report_url || null;
-      streamMarkdown(answer);
-      // Attach intent and report_url to the last assistant message
-      setMessages((prev) => [
-        ...prev.slice(0, -1),
-        {
-          ...prev[prev.length - 1],
-          text: answer,
-          markdown: true,
-          intent,
-          reportUrl,
-        },
-      ]);
-    } catch (err) {
-      setStreaming(false);
-      setMessages((prev) => [
-        ...prev.slice(0, -1),
-        {
-          id: Date.now() + 2,
-          role: "assistant",
-          text: "Sorry, there was an error processing your request.",
-          time: now(),
-        },
-      ]);
+
+      // Update metadata, then stream response with dynamic speed based on content length.
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === placeholderId ? { ...m, intent, reportUrl, time: now() } : m
+        )
+      );
+      await streamText(answer, placeholderId, getStreamDelay(answer));
+    } catch (error) {
+      const errorMsg = "⚠️ There was an error processing your request. Please try again.";
+      await streamText(errorMsg, placeholderId, getStreamDelay(errorMsg, 2200, 10, 35));
     } finally {
       setIsTyping(false);
+      setStreaming(false);
     }
   };
 
   const handleKey = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      send(input);
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); }
   };
 
   const handleInput = (e) => {
     setInput(e.target.value);
     e.target.style.height = "auto";
-    e.target.style.height = Math.min(e.target.scrollHeight, 128) + "px";
+    e.target.style.height = Math.min(e.target.scrollHeight, 140) + "px";
   };
 
   const showSuggestions = messages.length <= 2 && !isTyping && !streaming;
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap');
-        * { font-family: 'Instrument Sans', sans-serif; }
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        textarea::-webkit-scrollbar { display: none; }
-        .messages-scroll::-webkit-scrollbar { width: 4px; }
-        .messages-scroll::-webkit-scrollbar-track { background: transparent; }
-        .messages-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
+      <div className="app">
 
-        /* Markdown Table Styling */
-        .chat-markdown table {
-          width: 100%;
-          border-collapse: collapse;
-          margin: 0.5em 0;
-          font-size: 0.97em;
-        }
-        .chat-markdown th,
-        .chat-markdown td {
-          border: 1px solid #cbd5e1;
-          padding: 6px 10px;
-          text-align: left;
-        }
-        .chat-markdown th {
-          background: #f1f5f9;
-          font-weight: 600;
-        }
-        .chat-markdown tr:nth-child(even) td {
-          background: #f8fafc;
-        }
-        .chat-markdown {
-          overflow-x: auto;
-        }
-        .chat-markdown code {
-          background: #f3f4f6;
-          padding: 2px 4px;
-          border-radius: 4px;
-          font-size: 0.95em;
-        }
-        .chat-markdown pre {
-          background: #f3f4f6;
-          padding: 10px;
-          border-radius: 6px;
-          overflow-x: auto;
-        }
-      `}</style>
-
-      <div className="flex flex-col h-screen bg-slate-50">
-
-        {/* Header */}
-        <header className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between"
-          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-sm">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-              </svg>
+        {/* ── Header ── */}
+        <header className="header">
+          <div className="header-left">
+            <div className="header-avatar">
+              <span className="avatar-label">AI</span>
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-slate-800">AI Assistant</h1>
-              <p className="text-xs text-emerald-500 font-medium flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+              <div className="header-title">Sarvekshan Sahayak AI Assistant</div>
+              <div className="header-status">
+                <span className="status-dot" />
                 Online
-              </p>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <button className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
-            </button>
-            <button className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
-              </svg>
-            </button>
+          <div className="header-actions">
           </div>
         </header>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 messages-scroll">
-          <div className="max-w-2xl mx-auto w-full flex flex-col gap-5">
+        {/* ── Messages ── */}
+        <div className="messages">
+          <div className="date-divider">Today</div>
 
-            <div className="text-center">
-              <span className="text-xs text-slate-400 font-medium uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">Today</span>
-            </div>
+          {messages.map((msg, idx) => {
+            const isLastAssistant =
+              idx === messages.length - 1 && msg.role === "assistant" && streaming;
+            return (
+              <Message key={msg.id} msg={msg} isStreaming={isLastAssistant} />
+            );
+          })}
 
-            {messages.map((msg, idx) => {
-              // If this is the last assistant message and streaming, show streamedText
-              if (
-                idx === messages.length - 1 &&
-                msg.role === "assistant" &&
-                streaming
-              ) {
-                return (
-                  <Message
-                    key={msg.id}
-                    msg={{
-                      ...msg,
-                      text: streamedText,
-                      markdown: true,
-                    }}
-                  />
-                );
-              }
-              return <Message key={msg.id} msg={msg} />;
-            })}
-
-            {/* Report Button: Only show if latest assistant message has intent === "report" */}
-            {(() => {
-              const lastMsg = messages[messages.length - 1];
-              if (
-                lastMsg &&
-                lastMsg.role === "assistant" &&
-                lastMsg.intent === "report" &&
-                lastMsg.reportUrl
-              ) {
-                return (
-                  <div className="flex justify-end mt-2">
-                    <a
-                      href={lastMsg.reportUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block px-4 py-2 bg-emerald-500 text-white rounded-lg shadow hover:bg-emerald-600 transition-colors text-sm font-medium"
-                    >
-                      Download Report
-                    </a>
-                  </div>
-                );
-              }
-              return null;
-            })()}
-
-            {isTyping && !streaming && (
-              <div className="flex gap-3 items-end" style={{ animation: "fadeUp 0.25s ease forwards" }}>
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                  </svg>
-                </div>
-                <div className="bg-white border border-slate-100 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
-                  <TypingDots />
-                </div>
+          {/* Typing indicator — shown only when waiting and no placeholder yet */}
+          {isTyping && !streaming && (
+            <div className="typing-row" style={{ animation: "fadeUp 0.22s ease forwards" }}>
+              <div className="avatar">
+                <span className="avatar-label">AI</span>
               </div>
-            )}
+              <TypingDots />
+            </div>
+          )}
 
-            <div ref={messagesEndRef} />
-          </div>
+          <div ref={bottomRef} />
         </div>
 
-        {/* Suggestions */}
+        {/* ── Suggestions ── */}
         {showSuggestions && (
-          <div className="px-4 pb-3">
-            <div className="max-w-2xl mx-auto flex flex-wrap gap-2">
+          <div className="suggestions">
+            <div className="suggestions-inner">
               {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => send(s)}
-                  className="text-xs px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 transition-all shadow-sm cursor-pointer"
-                >
+                <button key={s} className="suggestion-chip" onClick={() => send(s)}>
                   {s}
                 </button>
               ))}
@@ -342,47 +253,34 @@ export default function App() {
           </div>
         )}
 
-        {/* Input */}
-        <div className="bg-white border-t border-slate-100 px-4 py-4"
-          style={{ boxShadow: "0 -1px 3px rgba(0,0,0,0.04)" }}>
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-end gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 transition-all focus-within:border-indigo-300 focus-within:bg-white"
-              style={{ transition: "all 0.2s" }}>
-              <textarea
-                ref={textareaRef}
-                rows={1}
-                className="flex-1 bg-transparent text-sm text-slate-700 placeholder-slate-400 resize-none outline-none leading-relaxed"
-                placeholder="Ask me anything about your database..."
-                value={input}
-                onChange={handleInput}
-                onKeyDown={handleKey}
-                disabled={isTyping || streaming}
-              />
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-slate-100 cursor-pointer" tabIndex={-1}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => send(input)}
-                  disabled={!input.trim() || isTyping || streaming}
-                  className="w-8 h-8 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-200 disabled:cursor-not-allowed flex items-center justify-center transition-all hover:shadow-md active:scale-95 cursor-pointer"
-                >
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
-                  </svg>
-                </button>
-              </div>
+        {/* ── Input ── */}
+        <div className="input-area">
+          <div className="input-box">
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              placeholder="Kuch bhi poochein apne database ke baare mein..."
+              value={input}
+              onChange={handleInput}
+              onKeyDown={handleKey}
+              disabled={isTyping || streaming}
+            />
+            <div className="input-actions">
+              <button
+                className="send-btn"
+                onClick={() => send(input)}
+                disabled={!input.trim() || isTyping || streaming}
+                title="Send"
+              >
+                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+                </svg>
+              </button>
             </div>
-            <p className="text-center text-xs text-slate-400 mt-2">
-              Press{" "}
-              <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500 text-[10px]">Enter</kbd>
-              {" "}to send ·{" "}
-              <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500 text-[10px]">Shift+Enter</kbd>
-              {" "}for new line
-            </p>
           </div>
+          <p className="input-hint">
+            <kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> for new line
+          </p>
         </div>
 
       </div>
