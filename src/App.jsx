@@ -24,7 +24,8 @@ const SUGGESTIONS = [
   "BJP party mein kitne members hain?",
   "Sabhi members ki list dikhao",
   "Ward 4 ke members kaun hain?",
-  "Total members ka report chahiye",
+  "Total gaon kitne hai",
+  "Total district kitne hai",
 ];
 
 function TypingDots() {
