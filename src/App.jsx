@@ -12,7 +12,7 @@ const INITIAL_MESSAGES = [
   {
     id: 1,
     role: "assistant",
-    text: "**नमस्ते !** मैं आपका **' सर्वेक्षण सहायक एआई सहायक '** हूँ ।\n\nआप अपने डेटा के बारे में कोई भी सवाल पूछ सकते हैं — हिंदी या अंग्रेज़ी में। मैं आपको उत्तर, महत्वपूर्ण जानकारी (इंसाइट्स) और रिपोर्ट देने में मदद करूँगा ।",
+    text: "**नमस्ते !** मैं आपका **'JanSampark AI Assistant '** हूँ ।\n\nआप अपने डेटा के बारे में कोई भी सवाल पूछ सकते हैं — हिंदी या अंग्रेज़ी में। मैं आपको उत्तर, महत्वपूर्ण जानकारी (इंसाइट्स) और रिपोर्ट देने में मदद करूँगा ।",
     time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     markdown: true,
   },
@@ -205,7 +205,7 @@ export default function App() {
               <span className="avatar-label">AI</span>
             </div>
             <div>
-              <div className="header-title">Sarvekshan Sahayak AI Assistant</div>
+              <div className="header-title">JanSampark AI Assistant</div>
               <div className="header-status">
                 <span className="status-dot" />
                 Online
